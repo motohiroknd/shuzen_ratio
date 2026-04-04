@@ -37,7 +37,7 @@
         <!-- メッセージエリア -->
         <div id="messageArea" class="hidden rounded-lg p-4 mb-6"></div>
 
-        <!-- 月次設定パネル (月1回) -->
+        <!-- 月次設定パネル -->
         <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
                 <h2 class="text-lg font-semibold flex items-center gap-2">
@@ -48,14 +48,12 @@
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                <!-- 基準月 -->
                 <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 h-full flex flex-col justify-center">
                     <label for="baseMonth" class="block text-sm font-bold text-slate-700 mb-2">「今月」として扱う基準月</label>
                     <input type="month" id="baseMonth" class="w-full border border-slate-300 rounded-md px-3 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-shadow bg-white">
                     <p class="text-xs text-slate-500 mt-2">※ここから「先月」「先々月」を自動計算します。</p>
                 </div>
 
-                <!-- File C (分母) -->
                 <div class="relative border-2 border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center text-center file-drop-area bg-white hover:bg-slate-50 transition-colors h-full">
                     <div class="flex items-center gap-3 mb-2">
                         <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -63,19 +61,17 @@
                         </div>
                         <h3 class="font-bold text-slate-800">分母用データ</h3>
                     </div>
-                    <p class="text-xs text-slate-500 mb-3">必須列: 受付番号, 受付者, 所属</p>
                     <input type="file" id="fileC" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                     <button class="bg-white border border-slate-300 text-slate-700 text-xs px-4 py-1.5 rounded-md font-medium shadow-sm pointer-events-none">
                         ファイルを選択
                     </button>
                     <p id="fileNameC" class="mt-2 text-sm text-purple-600 font-medium truncate w-full px-2 min-h-[20px]"></p>
                     
-                    <!-- 分母プレビュー表示 -->
                     <div id="denomPreview" class="hidden mt-3 w-full bg-purple-50 rounded-lg p-3 border border-purple-100">
                         <div class="flex justify-between items-center mb-2 px-1">
-                            <p class="text-[10px] text-purple-500 font-bold uppercase tracking-wider">読み込み済みの分母数</p>
+                            <p class="text-[10px] text-purple-500 font-bold uppercase tracking-wider">分母数内訳</p>
                             <div class="text-[10px] font-bold text-slate-600">
-                                内訳 10：<span id="previewDenom10" class="text-blue-600">0</span> 25：<span id="previewDenom25" class="text-green-600">0</span>
+                                10：<span id="previewDenom10" class="text-blue-600">0</span> 25：<span id="previewDenom25" class="text-green-600">0</span>
                             </div>
                         </div>
                         <div class="grid grid-cols-5 gap-1 bg-white rounded p-2 border border-purple-50 shadow-sm">
@@ -116,29 +112,25 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- File A -->
                 <div class="relative border-2 border-dashed border-blue-200 rounded-xl p-8 flex flex-col items-center justify-center text-center file-drop-area bg-blue-50/30 hover:bg-blue-50 transition-colors">
                     <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
                         <span class="text-blue-600 font-bold text-2xl">A</span>
                     </div>
                     <h3 class="font-bold text-slate-800 text-lg mb-1">10お困り事 完了数</h3>
-                    <p class="text-sm text-slate-500 mb-5">※所属制限なし（全データ対象）</p>
                     <input type="file" id="fileA" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <button class="bg-white border border-blue-300 text-blue-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm hover:bg-blue-50 pointer-events-none">
+                    <button class="bg-white border border-blue-300 text-blue-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm pointer-events-none">
                         ファイルを選択
                     </button>
                     <p id="fileNameA" class="mt-3 text-sm text-blue-600 font-bold truncate w-full px-2 min-h-[20px]"></p>
                 </div>
 
-                <!-- File B -->
                 <div class="relative border-2 border-dashed border-green-200 rounded-xl p-8 flex flex-col items-center justify-center text-center file-drop-area bg-green-50/30 hover:bg-green-50 transition-colors">
                     <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
                         <span class="text-green-600 font-bold text-2xl">B</span>
                     </div>
                     <h3 class="font-bold text-slate-800 text-lg mb-1">25設備保証修繕 完了数</h3>
-                    <p class="text-sm text-slate-500 mb-5">必須列: 受付日, 完了日, 所属, 受付者</p>
                     <input type="file" id="fileB" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <button class="bg-white border border-green-300 text-green-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm hover:bg-green-50 pointer-events-none">
+                    <button class="bg-white border border-green-300 text-green-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm pointer-events-none">
                         ファイルを選択
                     </button>
                     <p id="fileNameB" class="mt-3 text-sm text-green-600 font-bold truncate w-full px-2 min-h-[20px]"></p>
@@ -148,7 +140,7 @@
 
         <!-- アクションボタン -->
         <div class="flex justify-center">
-            <button id="calcButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-blue-200 flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button id="calcButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-blue-200 flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95">
                 <i data-lucide="play" class="w-5 h-5 fill-current"></i>
                 計算を実行する
             </button>
@@ -165,7 +157,6 @@
             </div>
 
             <div class="p-6">
-                <!-- 全体サマリー -->
                 <div class="mb-8 bg-blue-50 rounded-xl p-6 border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div>
                         <h3 class="text-lg font-bold text-blue-900 mb-1">全体 修繕完了率</h3>
@@ -188,7 +179,6 @@
                     </div>
                 </div>
 
-                <!-- 各課ごとの詳細 -->
                 <h3 class="text-lg font-bold border-b-2 border-slate-100 pb-2 mb-4">各課・その他集計</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
@@ -206,7 +196,6 @@
                     </table>
                 </div>
 
-                <!-- 内訳詳細 -->
                 <div class="mt-8 pt-6 border-t border-slate-200 text-right">
                     <p class="text-[10px] text-slate-400 italic mb-2">※計算ロジック：小数点第2位以下切り捨て</p>
                     <button id="toggleDetailsBtn" class="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors ml-auto">
@@ -215,25 +204,23 @@
                     </button>
                     
                     <div id="detailsArea" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                        <!-- A詳細 -->
                         <div class="bg-slate-50 rounded-lg p-4 text-sm border border-slate-200">
-                            <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">A: 10お困り事 (所属制限なし)</h4>
+                            <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">A: 10お困り事 (全所属)</h4>
                             <ul class="space-y-2 text-slate-600">
                                 <li class="flex justify-between"><span>条件① (先月受付):</span> <strong id="aCond1">0</strong></li>
                                 <li class="flex justify-between"><span>条件② (先々月以前受付＆今月完了):</span> <strong id="aCond2">0</strong></li>
                                 <li class="flex justify-between text-blue-600 font-bold border-t border-slate-200 pt-2 mt-2">
-                                    <span>合計 (③):</span> <span id="aTotal">0</span>
+                                    <span>合計:</span> <span id="aTotal">0</span>
                                 </li>
                             </ul>
                         </div>
-                        <!-- B詳細 -->
                         <div class="bg-slate-50 rounded-lg p-4 text-sm border border-slate-200">
                             <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">B: 25設備保証修繕 (特定3課)</h4>
                             <ul class="space-y-2 text-slate-600">
                                 <li class="flex justify-between"><span>条件① (先月受付):</span> <strong id="bCond1">0</strong></li>
                                 <li class="flex justify-between"><span>条件② (先々月以前受付＆今月完了):</span> <strong id="bCond2">0</strong></li>
                                 <li class="flex justify-between text-green-600 font-bold border-t border-slate-200 pt-2 mt-2">
-                                    <span>合計 (③):</span> <span id="bTotal">0</span>
+                                    <span>合計:</span> <span id="bTotal">0</span>
                                 </li>
                             </ul>
                         </div>
@@ -265,16 +252,25 @@
         };
 
         /**
-         * 小数点第2位以下を切り捨てて、第1位まで表示するヘルパー
+         * 修正後の計算ロジック
+         * 小数点第2位以下を切り捨てて、第1位まで表示
          */
         const floorRate = (num, denom) => {
             if (!denom || denom === 0) return "0.0";
-            const val = (num / denom) * 100;
-            // 10倍して切り捨てて、10で割ることで小数点第1位までの切り捨てを実現
-            return (Math.floor(val * 10) / 10).toFixed(1);
+            
+            // 例: 263 / 516 = 0.50968...
+            const ratio = num / denom;
+            
+            // 1000倍して整数にする (0.50968... -> 509.68...)
+            // Math.floorで小数点以下を落とす (509.68... -> 509)
+            // 10で割って第1位に戻す (509 -> 50.9)
+            // 誤差防止のため epsilon (微小な値) を引いてから floor するとより安全
+            const val = ratio * 100;
+            const result = Math.floor(val * 10) / 10;
+            
+            return result.toFixed(1);
         };
 
-        // 分母データを集計
         const calculateDenomOnly = (data) => {
             const result = { 
                 total: 0, 
@@ -294,7 +290,6 @@
                     result.dept[displayDept]++;
                 } else if (uketsukeNo.startsWith("25")) {
                     const receptor = normalizeText(row["受付者"]);
-                    // 25系は、受付者リストに含まれ、かつ営業1~3課である場合のみ
                     if (targetReceptors.includes(receptor) && targetDepartments.includes(deptOrig)) {
                         result.total++;
                         result.count25++;
@@ -318,14 +313,12 @@
                 if (!file) {
                     nameDisp.textContent = "";
                     state[stateKey] = null;
-                    if (stateKey === 'dataC') document.getElementById('denomPreview').classList.add('hidden');
                     return;
                 }
                 nameDisp.textContent = file.name;
                 try {
                     const data = await readExcel(file);
                     state[stateKey] = data;
-
                     if (stateKey === 'dataC') {
                         state.denomResult = calculateDenomOnly(data);
                         document.getElementById('previewDenomTotal').textContent = state.denomResult.total.toLocaleString();
@@ -339,10 +332,7 @@
                     }
                     showMessage(`${file.name} を読み込みました`, 'success');
                 } catch (error) {
-                    console.error(error);
                     showMessage(`読み込み失敗: ${file.name}`, 'error');
-                    state[stateKey] = null;
-                    nameDisp.textContent = "エラー";
                 }
             });
         };
