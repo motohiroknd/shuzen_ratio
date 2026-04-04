@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>修繕完了率 算出ツール</title>
-    <!-- Favicon (Emoji SVG) -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS (Excel読み込み用) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .file-drop-area {
@@ -20,56 +16,39 @@
             background-color: #f3f4f6;
             border-color: #3b82f6;
         }
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3b82f6;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 font-sans pb-20">
 
-    <!-- ヘッダー -->
     <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
         <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <i data-lucide="wrench" class="text-blue-600 w-7 h-7"></i>
                 <h1 class="text-2xl font-bold text-slate-800">修繕完了率 算出ツール</h1>
             </div>
-            <div id="cloudStatus" class="flex items-center gap-2 text-xs font-medium text-slate-400">
-                <span id="cloudStatusIcon"><i data-lucide="cloud-off" class="w-4 h-4"></i></span>
-                <span id="cloudStatusText">オフラインモード</span>
+            <div class="text-xs font-medium text-slate-400">
+                <span>ローカルモード</span>
             </div>
         </div>
     </header>
 
     <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
         
-        <!-- メッセージエリア -->
         <div id="messageArea" class="hidden rounded-lg p-4 mb-6 shadow-sm border"></div>
 
-        <!-- 月次設定パネル -->
+        <!-- 1. 設定パネル -->
         <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
                 <h2 class="text-lg font-semibold flex items-center gap-2">
                     <i data-lucide="settings" class="w-5 h-5 text-purple-500"></i>
-                    1. 基本設定（月1回のみ更新）
+                    1. 基本設定
                 </h2>
-                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">クラウド同期対応</span>
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 h-full flex flex-col justify-center">
                     <label for="baseMonth" class="block text-sm font-bold text-slate-700 mb-2">「今月」として扱う基準月</label>
-                    <div class="relative">
-                        <input type="month" id="baseMonth" class="w-full border border-slate-300 rounded-md px-3 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-shadow bg-white">
-                    </div>
-                    <p class="text-xs text-slate-500 mt-2">※基準月を変更すると自動でクラウドに保存されます。</p>
+                    <input type="month" id="baseMonth" class="w-full border border-slate-300 rounded-md px-3 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-shadow bg-white">
                 </div>
 
                 <div class="relative border-2 border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center text-center file-drop-area bg-white hover:bg-slate-50 transition-colors h-full">
@@ -77,60 +56,22 @@
                         <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                             <i data-lucide="sigma" class="text-purple-600 w-4 h-4"></i>
                         </div>
-                        <h3 class="font-bold text-slate-800">分母用データ</h3>
+                        <h3 class="font-bold text-slate-800">分母用データ (C)</h3>
                     </div>
                     <input type="file" id="fileC" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <button class="bg-white border border-slate-300 text-slate-700 text-xs px-4 py-1.5 rounded-md font-medium shadow-sm pointer-events-none">
-                        ファイルを選択
-                    </button>
+                    <button class="bg-white border border-slate-300 text-slate-700 text-xs px-4 py-1.5 rounded-md font-medium shadow-sm pointer-events-none">ファイルを選択</button>
                     <p id="fileNameC" class="mt-2 text-sm text-purple-600 font-medium truncate w-full px-2 min-h-[20px]"></p>
-                    
-                    <div id="denomPreview" class="hidden mt-3 w-full bg-purple-50 rounded-lg p-3 border border-purple-100">
-                        <div class="flex justify-between items-center mb-2 px-1">
-                            <div class="flex items-center gap-1">
-                                <p class="text-[10px] text-purple-500 font-bold uppercase tracking-wider">分母数内訳</p>
-                                <span id="syncIndicator" class="hidden"><i data-lucide="cloud-check" class="w-3 h-3 text-green-500"></i></span>
-                            </div>
-                            <div class="text-[10px] font-bold text-slate-600">
-                                10：<span id="previewDenom10" class="text-blue-600">0</span> 25：<span id="previewDenom25" class="text-green-600">0</span>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-5 gap-1 bg-white rounded p-2 border border-purple-50 shadow-sm">
-                            <div class="text-center">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">合計</span>
-                                <span id="previewDenomTotal" class="text-sm font-black text-slate-800">0</span>
-                            </div>
-                            <div class="text-center border-l border-slate-100">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">営業1</span>
-                                <span id="previewDenom1" class="text-xs font-bold text-slate-700">0</span>
-                            </div>
-                            <div class="text-center border-l border-slate-100">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">営業2</span>
-                                <span id="previewDenom2" class="text-xs font-bold text-slate-700">0</span>
-                            </div>
-                            <div class="text-center border-l border-slate-100">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">営業3</span>
-                                <span id="previewDenom3" class="text-xs font-bold text-slate-700">0</span>
-                            </div>
-                            <div class="text-center border-l border-slate-100">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">その他</span>
-                                <span id="previewDenomOther" class="text-xs font-bold text-slate-700">0</span>
-                            </div>
-                        </div>
-                        <p id="denomLoadTime" class="text-[8px] text-slate-400 mt-2 text-right italic"></p>
-                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- 日次データパネル -->
+        <!-- 2. 日次データ -->
         <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 border-t-4 border-t-blue-500">
             <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
                 <h2 class="text-lg font-semibold flex items-center gap-2">
                     <i data-lucide="file-spreadsheet" class="w-5 h-5 text-blue-500"></i>
-                    2. 完了データの読み込み（毎日更新）
+                    2. 完了データの読み込み
                 </h2>
-                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">日次作業</span>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -140,9 +81,7 @@
                     </div>
                     <h3 class="font-bold text-slate-800 text-lg mb-1">10お困り事 完了数</h3>
                     <input type="file" id="fileA" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <button class="bg-white border border-blue-300 text-blue-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm pointer-events-none">
-                        ファイルを選択
-                    </button>
+                    <button class="bg-white border border-blue-300 text-blue-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm pointer-events-none">ファイルを選択</button>
                     <p id="fileNameA" class="mt-3 text-sm text-blue-600 font-bold truncate w-full px-2 min-h-[20px]"></p>
                 </div>
 
@@ -152,23 +91,20 @@
                     </div>
                     <h3 class="font-bold text-slate-800 text-lg mb-1">25設備保証修繕 完了数</h3>
                     <input type="file" id="fileB" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <button class="bg-white border border-green-300 text-green-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm pointer-events-none">
-                        ファイルを選択
-                    </button>
+                    <button class="bg-white border border-green-300 text-green-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm pointer-events-none">ファイルを選択</button>
                     <p id="fileNameB" class="mt-3 text-sm text-green-600 font-bold truncate w-full px-2 min-h-[20px]"></p>
                 </div>
             </div>
         </section>
 
-        <!-- アクションボタン -->
         <div class="flex justify-center">
-            <button id="calcButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-blue-200 flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95">
+            <button id="calcButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg flex items-center gap-2 transition-all transform hover:scale-105">
                 <i data-lucide="play" class="w-5 h-5 fill-current"></i>
                 計算を実行する
             </button>
         </div>
 
-        <!-- 結果表示パネル -->
+        <!-- 結果パネル -->
         <section id="resultSection" class="hidden bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
             <div class="bg-slate-800 text-white px-6 py-4 flex items-center justify-between">
                 <h2 class="text-xl font-bold flex items-center gap-2">
@@ -186,22 +122,20 @@
                     </div>
                     <div class="flex items-end gap-4">
                         <div class="text-center">
-                            <p class="text-sm text-slate-500 mb-1">完了数 (分子)</p>
+                            <p class="text-sm text-slate-500 mb-1">完了数</p>
                             <p id="resTotalNum" class="text-2xl font-bold text-slate-700">0</p>
                         </div>
                         <div class="text-3xl font-light text-slate-300 pb-1">/</div>
                         <div class="text-center">
-                            <p class="text-sm text-slate-500 mb-1">対象数 (分母)</p>
+                            <p class="text-sm text-slate-500 mb-1">対象数</p>
                             <p id="resTotalDenom" class="text-2xl font-bold text-slate-700">0</p>
                         </div>
-                        <div class="text-3xl font-light text-slate-300 pb-1">=</div>
-                        <div class="text-center bg-white rounded-lg px-4 py-2 shadow-sm border border-blue-100">
+                        <div class="text-center bg-white rounded-lg px-4 py-2 shadow-sm border border-blue-100 ml-4">
                             <p id="resTotalRate" class="text-4xl font-black text-blue-600">0.0%</p>
                         </div>
                     </div>
                 </div>
 
-                <h3 class="text-lg font-bold border-b-2 border-slate-100 pb-2 mb-4">各課・その他集計</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -209,42 +143,26 @@
                                 <th class="py-3 px-4 font-medium">所属</th>
                                 <th class="py-3 px-4 font-medium text-right">分母 (対象数)</th>
                                 <th class="py-3 px-4 font-medium text-right">分子 (完了数)</th>
-                                <th class="py-3 px-4 font-medium text-right bg-slate-100 rounded-tr-lg">完了率</th>
+                                <th class="py-3 px-4 font-medium text-right bg-slate-100">完了率</th>
                             </tr>
                         </thead>
-                        <tbody id="deptTableBody" class="text-slate-700 divide-y divide-slate-100">
-                            <!-- JSで生成 -->
-                        </tbody>
+                        <tbody id="deptTableBody" class="text-slate-700 divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-slate-200 text-right">
-                    <p class="text-[10px] text-slate-400 italic mb-2">※計算ロジック：小数点第2位以下切り捨て</p>
                     <button id="toggleDetailsBtn" class="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors ml-auto">
                         <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" id="detailIcon"></i>
                         計算の内訳を表示する
                     </button>
-                    
                     <div id="detailsArea" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                         <div class="bg-slate-50 rounded-lg p-4 text-sm border border-slate-200">
-                            <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">A: 10お困り事 (全所属)</h4>
-                            <ul class="space-y-2 text-slate-600">
-                                <li class="flex justify-between"><span>条件① (先月受付):</span> <strong id="aCond1">0</strong></li>
-                                <li class="flex justify-between"><span>条件② (先々月以前受付＆今月完了):</span> <strong id="aCond2">0</strong></li>
-                                <li class="flex justify-between text-blue-600 font-bold border-t border-slate-200 pt-2 mt-2">
-                                    <span>合計:</span> <span id="aTotal">0</span>
-                                </li>
-                            </ul>
+                            <h4 class="font-bold text-slate-700 mb-2">A: 10お困り事</h4>
+                            <p>条件①: <span id="aCond1">0</span> / 条件②: <span id="aCond2">0</span> / 合計: <span id="aTotal">0</span></p>
                         </div>
                         <div class="bg-slate-50 rounded-lg p-4 text-sm border border-slate-200">
-                            <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">B: 25設備保証修繕 (特定3課)</h4>
-                            <ul class="space-y-2 text-slate-600">
-                                <li class="flex justify-between"><span>条件① (先月受付):</span> <strong id="bCond1">0</strong></li>
-                                <li class="flex justify-between"><span>条件② (先々月以前受付＆今月完了):</span> <strong id="bCond2">0</strong></li>
-                                <li class="flex justify-between text-green-600 font-bold border-t border-slate-200 pt-2 mt-2">
-                                    <span>合計:</span> <span id="bTotal">0</span>
-                                </li>
-                            </ul>
+                            <h4 class="font-bold text-slate-700 mb-2">B: 25設備保証修繕</h4>
+                            <p>条件①: <span id="bCond1">0</span> / 条件②: <span id="bCond2">0</span> / 合計: <span id="bTotal">0</span></p>
                         </div>
                     </div>
                 </div>
@@ -252,224 +170,24 @@
         </section>
     </main>
 
-    <!-- Firebase SDK (Modular Version) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global Firebase Configuration
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        const state = {
-            dataA: null,
-            dataB: null,
-            dataC: null, // 分母用データ
-            denomResult: null,
-            user: null
-        };
-
+    <script>
+        const state = { dataA: null, dataB: null, dataC: null };
         const targetDepartments = ["営業1課", "営業2課", "営業3課"];
-        const targetReceptors = [
-            "ネクストリング株式会社", "郡司唯", "岩越未夢", "後藤伊織",
-            "石原稔子", "近藤素弘", "土橋正季", "合田美結"
-        ];
+        const targetReceptors = ["ネクストリング株式会社", "郡司唯", "岩越未夢", "後藤伊織", "石原稔子", "近藤素弘", "土橋正季", "合田美結"];
 
-        // --- Firebase Data Handling ---
-
-        const getDenomDocRef = () => {
-            // FIXED: Ensure even number of segments (6 segments)
-            // segments: artifacts (1), appId (2), public (3), data (4), settings (5), denomDoc (6)
-            return doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'denomDoc');
-        };
-
-        const saveDenomToCloud = async (result) => {
-            if (!state.user) return;
-            updateStatus('syncing', '保存中...');
-            try {
-                const docRef = getDenomDocRef();
-                await setDoc(docRef, {
-                    baseMonth: document.getElementById('baseMonth').value,
-                    denomResult: result,
-                    updatedAt: new Date().toISOString(),
-                    updatedBy: state.user.uid
-                });
-                updateStatus('online', 'クラウド同期済み');
-                document.getElementById('syncIndicator').classList.remove('hidden');
-            } catch (error) {
-                console.error("Cloud save error:", error);
-                updateStatus('error', '保存失敗');
-            }
-        };
-
-        const loadDenomFromCloud = (user) => {
-            if (!user) return;
-            const docRef = getDenomDocRef();
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const cloudData = docSnap.data();
-                    document.getElementById('baseMonth').value = cloudData.baseMonth;
-                    state.denomResult = cloudData.denomResult;
-                    state.dataC = [{}]; // Dummy to signal presence
-                    
-                    renderDenomPreview(state.denomResult);
-                    document.getElementById('denomLoadTime').textContent = `最終更新: ${new Date(cloudData.updatedAt).toLocaleString()}`;
-                    document.getElementById('fileNameC').textContent = "クラウドから分母データを読み込み済み";
-                    updateStatus('online', 'クラウド同期済み');
-                } else {
-                    updateStatus('online', '設定未保存');
-                }
-            }, (error) => {
-                console.error("Firestore listen error:", error);
-                updateStatus('error', '同期エラー');
-            });
-        };
-
-        const updateStatus = (mode, text) => {
-            const iconWrap = document.getElementById('cloudStatusIcon');
-            const textWrap = document.getElementById('cloudStatusText');
-            if (!textWrap) return;
-            textWrap.textContent = text;
-            
-            if (mode === 'syncing') {
-                iconWrap.innerHTML = '<span class="loading-spinner"></span>';
-            } else if (mode === 'online') {
-                iconWrap.innerHTML = '<i data-lucide="cloud" class="w-4 h-4 text-blue-500"></i>';
-            } else if (mode === 'error') {
-                iconWrap.innerHTML = '<i data-lucide="cloud-off" class="w-4 h-4 text-red-500"></i>';
-            }
+        window.addEventListener('load', () => {
             lucide.createIcons();
-        };
+            const input = document.getElementById('baseMonth');
+            const d = new Date();
+            input.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
-        // --- Logic & Helpers ---
-
-        const normalizeText = (text) => {
-            if (typeof text !== 'string') return String(text || '');
-            return text.replace(/\s+/g, '');
-        };
-
-        const floorRate = (num, denom) => {
-            if (!denom || denom === 0) return "0.0";
-            const ratio = num / denom;
-            const val = ratio * 100;
-            const result = Math.floor(val * 10) / 10;
-            return result.toFixed(1);
-        };
-
-        const calculateDenomOnly = (data) => {
-            const result = { 
-                total: 0, 
-                count10: 0, 
-                count25: 0, 
-                dept: { "営業1課": 0, "営業2課": 0, "営業3課": 0, "その他": 0 } 
-            };
-            
-            data.forEach(row => {
-                const uketsukeNo = String(row["受付番号"] || "").trim();
-                const deptOrig = normalizeText(row["所属"]);
-                const displayDept = targetDepartments.includes(deptOrig) ? deptOrig : "その他";
-
-                if (uketsukeNo.startsWith("10")) {
-                    result.total++;
-                    result.count10++;
-                    result.dept[displayDept]++;
-                } else if (uketsukeNo.startsWith("25")) {
-                    const receptor = normalizeText(row["受付者"]);
-                    if (targetReceptors.includes(receptor) && targetDepartments.includes(deptOrig)) {
-                        result.total++;
-                        result.count25++;
-                        result.dept[deptOrig]++;
-                    }
-                }
-            });
-            return result;
-        };
-
-        const renderDenomPreview = (res) => {
-            document.getElementById('previewDenomTotal').textContent = res.total.toLocaleString();
-            document.getElementById('previewDenom10').textContent = res.count10.toLocaleString();
-            document.getElementById('previewDenom25').textContent = res.count25.toLocaleString();
-            document.getElementById('previewDenom1').textContent = res.dept["営業1課"].toLocaleString();
-            document.getElementById('previewDenom2').textContent = res.dept["営業2課"].toLocaleString();
-            document.getElementById('previewDenom3').textContent = res.dept["営業3課"].toLocaleString();
-            document.getElementById('previewDenomOther').textContent = res.dept["その他"].toLocaleString();
-            document.getElementById('denomPreview').classList.remove('hidden');
-        };
-
-        const parseDate = (val) => {
-            if (!val) return null;
-            if (val instanceof Date) return val;
-            if (typeof val === 'string') {
-                const d = new Date(val);
-                return isNaN(d.getTime()) ? null : d;
-            }
-            if (typeof val === 'number') {
-                const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-                return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
-            }
-            return null;
-        };
-
-        // --- Event Listeners ---
-
-        window.addEventListener('load', async () => {
-            lucide.createIcons();
-            
-            // Auth init (Rule 3)
-            const initAuth = async () => {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            };
-            
-            await initAuth();
-
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    state.user = user;
-                    loadDenomFromCloud(user);
-                }
-            });
-
-            const baseMonthInput = document.getElementById('baseMonth');
-            const today = new Date();
-            if (!baseMonthInput.value) {
-                baseMonthInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-            }
-
-            baseMonthInput.addEventListener('change', () => {
-                if (state.denomResult) {
-                    saveDenomToCloud(state.denomResult);
-                }
-            });
-
-            document.getElementById('fileA').addEventListener('change', async (e) => handleFile(e, 'dataA', 'fileNameA'));
-            document.getElementById('fileB').addEventListener('change', async (e) => handleFile(e, 'dataB', 'fileNameB'));
-            document.getElementById('fileC').addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                document.getElementById('fileNameC').textContent = file.name;
-                try {
-                    const data = await readExcel(file);
-                    state.dataC = data;
-                    state.denomResult = calculateDenomOnly(data);
-                    renderDenomPreview(state.denomResult);
-                    saveDenomToCloud(state.denomResult);
-                    showMessage(`${file.name} を読み込み保存しました`, 'success');
-                } catch (error) {
-                    showMessage('分母データの解析に失敗しました', 'error');
-                }
-            });
+            document.getElementById('fileA').addEventListener('change', (e) => handleFile(e, 'dataA', 'fileNameA'));
+            document.getElementById('fileB').addEventListener('change', (e) => handleFile(e, 'dataB', 'fileNameB'));
+            document.getElementById('fileC').addEventListener('change', (e) => handleFile(e, 'dataC', 'fileNameC'));
 
             document.getElementById('calcButton').addEventListener('click', () => {
                 if (!state.dataA || !state.dataB || !state.dataC) {
-                    showMessage('日次ファイル(A, B)をアップロードしてください。', 'error');
+                    alert('全てのファイルをアップロードしてください。');
                     return;
                 }
                 calculate();
@@ -481,109 +199,93 @@
             });
         });
 
-        async function handleFile(e, stateKey, nameId) {
+        async function handleFile(e, key, nameId) {
             const file = e.target.files[0];
             if (!file) return;
             document.getElementById(nameId).textContent = file.name;
-            try {
-                state[stateKey] = await readExcel(file);
-                showMessage(`${file.name} を読み込みました`, 'success');
-            } catch (error) {
-                showMessage(`読み込み失敗: ${file.name}`, 'error');
-            }
+            const data = await readExcel(file);
+            state[key] = data;
         }
 
-        async function readExcel(file) {
-            return new Promise((resolve, reject) => {
+        function readExcel(file) {
+            return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { cellDates: true });
-                    resolve(json);
+                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    resolve(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { cellDates: true }));
                 };
-                reader.onerror = reject;
                 reader.readAsArrayBuffer(file);
             });
         }
 
-        function showMessage(msg, type) {
-            const area = document.getElementById('messageArea');
-            area.textContent = msg;
-            area.className = `p-4 mb-6 rounded-lg font-medium border ${type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`;
-            area.classList.remove('hidden');
-            setTimeout(() => area.classList.add('hidden'), 4000);
-        }
+        const norm = (s) => String(s || '').replace(/\s+/g, '');
+        const parseDate = (v) => {
+            if (!v) return null;
+            if (v instanceof Date) return v;
+            if (typeof v === 'number') return new Date(Math.round((v - 25569) * 86400 * 1000));
+            const d = new Date(v);
+            return isNaN(d.getTime()) ? null : d;
+        };
 
         function calculate() {
-            const baseMonthStr = document.getElementById('baseMonth').value;
-            const [year, month] = baseMonthStr.split('-').map(Number);
-            
-            const currentMonthStart = new Date(year, month - 1, 1);
-            const currentMonthEnd = new Date(year, month, 0, 23, 59, 59, 999);
-            const prevMonthStart = new Date(year, month - 2, 1);
-            const prevMonthEnd = new Date(year, month - 1, 0, 23, 59, 59, 999);
-            const prevPrevMonthEnd = new Date(year, month - 2, 0, 23, 59, 59, 999);
+            const [y, m] = document.getElementById('baseMonth').value.split('-').map(Number);
+            const curStart = new Date(y, m - 1, 1), curEnd = new Date(y, m, 0, 23, 59, 59);
+            const preStart = new Date(y, m - 2, 1), preEnd = new Date(y, m - 1, 0, 23, 59, 59);
+            const prePreEnd = new Date(y, m - 2, 0, 23, 59, 59);
 
-            const isCond1 = (rDate) => rDate && rDate.getTime() >= prevMonthStart.getTime() && rDate.getTime() <= prevMonthEnd.getTime();
-            const isCond2 = (rDate, cDate) => rDate && cDate && rDate.getTime() <= prevPrevMonthEnd.getTime() && cDate.getTime() >= currentMonthStart.getTime() && cDate.getTime() <= currentMonthEnd.getTime();
+            const isC1 = (r) => r && r >= preStart && r <= preEnd;
+            const isC2 = (r, c) => r && c && r <= prePreEnd && c >= curStart && c <= curEnd;
 
-            const result = {
-                A: { total: 0, dept: { "営業1課": 0, "営業2課": 0, "営業3課": 0, "その他": 0 }, cond1: 0, cond2: 0 },
-                B: { total: 0, dept: { "営業1課": 0, "営業2課": 0, "営業3課": 0, "その他": 0 }, cond1: 0, cond2: 0 },
-                Denom: state.denomResult
+            const res = {
+                A: { total: 0, c1: 0, c2: 0, dept: { "営業1課": 0, "営業2課": 0, "営業3課": 0, "その他": 0 } },
+                B: { total: 0, c1: 0, c2: 0, dept: { "営業1課": 0, "営業2課": 0, "営業3課": 0, "その他": 0 } },
+                C: { total: 0, dept: { "営業1課": 0, "営業2課": 0, "営業3課": 0, "その他": 0 } }
             };
 
+            state.dataC.forEach(row => {
+                const no = String(row["受付番号"] || ""), dept = norm(row["所属"]), rec = norm(row["受付者"]);
+                const target = targetDepartments.includes(dept) ? dept : "その他";
+                if (no.startsWith("10")) { res.C.total++; res.C.dept[target]++; }
+                else if (no.startsWith("25") && targetDepartments.includes(dept) && targetReceptors.includes(rec)) { res.C.total++; res.C.dept[dept]++; }
+            });
+
             state.dataA.forEach(row => {
-                const rDate = parseDate(row["受付日"]), cDate = parseDate(row["完了日"]);
-                const dept = targetDepartments.includes(normalizeText(row["所属"])) ? normalizeText(row["所属"]) : "その他";
-                if (isCond1(rDate)) { result.A.cond1++; result.A.total++; result.A.dept[dept]++; }
-                else if (isCond2(rDate, cDate)) { result.A.cond2++; result.A.total++; result.A.dept[dept]++; }
+                const r = parseDate(row["受付日"]), c = parseDate(row["完了日"]), dept = targetDepartments.includes(norm(row["所属"])) ? norm(row["所属"]) : "その他";
+                if (isC1(r)) { res.A.c1++; res.A.total++; res.A.dept[dept]++; }
+                else if (isC2(r, c)) { res.A.c2++; res.A.total++; res.A.dept[dept]++; }
             });
 
             state.dataB.forEach(row => {
-                const dept = normalizeText(row["所属"]), receptor = normalizeText(row["受付者"]);
-                if (!targetDepartments.includes(dept) || !targetReceptors.includes(receptor)) return;
-                const rDate = parseDate(row["受付日"]), cDate = parseDate(row["完了日"]);
-                if (isCond1(rDate)) { result.B.cond1++; result.B.total++; result.B.dept[dept]++; }
-                else if (isCond2(rDate, cDate)) { result.B.cond2++; result.B.total++; result.B.dept[dept]++; }
+                const dept = norm(row["所属"]), rec = norm(row["受付者"]);
+                if (!targetDepartments.includes(dept) || !targetReceptors.includes(rec)) return;
+                const r = parseDate(row["受付日"]), c = parseDate(row["完了日"]);
+                if (isC1(r)) { res.B.c1++; res.B.total++; res.B.dept[dept]++; }
+                else if (isC2(r, c)) { res.B.c2++; res.B.total++; res.B.dept[dept]++; }
             });
 
-            renderResult(year, month, result);
+            render(y, m, res);
         }
 
-        function renderResult(y, m, res) {
+        function render(y, m, res) {
             document.getElementById('resultSection').classList.remove('hidden');
-            document.getElementById('targetMonthDisplay').textContent = `基準月: ${y}年${m}月`;
-
-            const totalNum = res.A.total + res.B.total;
-            const totalDenom = res.Denom.total;
-            
-            document.getElementById('resTotalNum').textContent = totalNum.toLocaleString();
-            document.getElementById('resTotalDenom').textContent = totalDenom.toLocaleString();
-            document.getElementById('resTotalRate').textContent = `${floorRate(totalNum, totalDenom)}%`;
+            document.getElementById('targetMonthDisplay').textContent = `${y}年${m}月`;
+            document.getElementById('resTotalNum').textContent = (res.A.total + res.B.total).toLocaleString();
+            document.getElementById('resTotalDenom').textContent = res.C.total.toLocaleString();
+            document.getElementById('resTotalRate').textContent = `${(Math.floor(((res.A.total + res.B.total) / (res.C.total || 1)) * 1000) / 10).toFixed(1)}%`;
 
             const tbody = document.getElementById('deptTableBody');
             tbody.innerHTML = '';
-            [...targetDepartments, "その他"].forEach(cat => {
-                const num = res.A.dept[cat] + res.B.dept[cat], denom = res.Denom.dept[cat];
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50";
-                tr.innerHTML = `
-                    <td class="py-3 px-4 font-bold text-slate-700">${cat}</td>
-                    <td class="py-3 px-4 text-right">${denom.toLocaleString()}</td>
-                    <td class="py-3 px-4 text-right text-blue-600 font-medium">${num.toLocaleString()}</td>
-                    <td class="py-3 px-4 text-right font-bold text-lg bg-slate-100/30">${floorRate(num, denom)}%</td>
-                `;
-                tbody.appendChild(tr);
+            [...targetDepartments, "その他"].forEach(d => {
+                const n = res.A.dept[d] + res.B.dept[d], den = res.C.dept[d];
+                tbody.innerHTML += `<tr><td class="py-3 px-4 font-bold">${d}</td><td class="py-3 px-4 text-right">${den}</td><td class="py-3 px-4 text-right">${n}</td><td class="py-3 px-4 text-right font-bold bg-slate-50">${(Math.floor((n / (den || 1)) * 1000) / 10).toFixed(1)}%</td></tr>`;
             });
 
-            document.getElementById('aCond1').textContent = res.A.cond1.toLocaleString();
-            document.getElementById('aCond2').textContent = res.A.cond2.toLocaleString();
-            document.getElementById('aTotal').textContent = res.A.total.toLocaleString();
-            document.getElementById('bCond1').textContent = res.B.cond1.toLocaleString();
-            document.getElementById('bCond2').textContent = res.B.cond2.toLocaleString();
-            document.getElementById('bTotal').textContent = res.B.total.toLocaleString();
+            document.getElementById('aCond1').textContent = res.A.c1;
+            document.getElementById('aCond2').textContent = res.A.c2;
+            document.getElementById('aTotal').textContent = res.A.total;
+            document.getElementById('bCond1').textContent = res.B.c1;
+            document.getElementById('bCond2').textContent = res.B.c2;
+            document.getElementById('bTotal').textContent = res.B.total;
             document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
         }
     </script>
