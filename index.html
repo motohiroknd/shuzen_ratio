@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>修繕完了率 算出ツール</title>
+    <!-- Favicon (Emoji SVG) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS (Excel読み込み用) -->
@@ -25,7 +27,7 @@
     <!-- ヘッダー -->
     <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
         <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
-            <i data-lucide="calculator" class="text-blue-600 w-7 h-7"></i>
+            <i data-lucide="wrench" class="text-blue-600 w-7 h-7"></i>
             <h1 class="text-2xl font-bold text-slate-800">修繕完了率 算出ツール</h1>
         </div>
     </header>
@@ -73,7 +75,7 @@
                         <div class="flex justify-between items-center mb-2 px-1">
                             <p class="text-[10px] text-purple-500 font-bold uppercase tracking-wider">読み込み済みの分母数</p>
                             <div class="text-[10px] font-bold text-slate-600">
-                                全体数内訳 10：<span id="previewDenom10" class="text-blue-600">0</span> 25：<span id="previewDenom25" class="text-green-600">0</span>
+                                内訳 10：<span id="previewDenom10" class="text-blue-600">0</span> 25：<span id="previewDenom25" class="text-green-600">0</span>
                             </div>
                         </div>
                         <div class="grid grid-cols-5 gap-1 bg-white rounded p-2 border border-purple-50 shadow-sm">
@@ -205,13 +207,14 @@
                 </div>
 
                 <!-- 内訳詳細 -->
-                <div class="mt-8 pt-6 border-t border-slate-200">
-                    <button id="toggleDetailsBtn" class="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors">
+                <div class="mt-8 pt-6 border-t border-slate-200 text-right">
+                    <p class="text-[10px] text-slate-400 italic mb-2">※計算ロジック：小数点第2位以下切り捨て</p>
+                    <button id="toggleDetailsBtn" class="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors ml-auto">
                         <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" id="detailIcon"></i>
                         計算の内訳を表示する
                     </button>
                     
-                    <div id="detailsArea" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div id="detailsArea" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                         <!-- A詳細 -->
                         <div class="bg-slate-50 rounded-lg p-4 text-sm border border-slate-200">
                             <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">A: 10お困り事 (所属制限なし)</h4>
@@ -261,7 +264,17 @@
             return text.replace(/\s+/g, '');
         };
 
-        // 分母データを集計する関数
+        /**
+         * 小数点第2位以下を切り捨てて、第1位まで表示するヘルパー
+         */
+        const floorRate = (num, denom) => {
+            if (!denom || denom === 0) return "0.0";
+            const val = (num / denom) * 100;
+            // 10倍して切り捨てて、10で割ることで小数点第1位までの切り捨てを実現
+            return (Math.floor(val * 10) / 10).toFixed(1);
+        };
+
+        // 分母データを集計
         const calculateDenomOnly = (data) => {
             const result = { 
                 total: 0, 
@@ -273,7 +286,6 @@
             data.forEach(row => {
                 const uketsukeNo = String(row["受付番号"] || "").trim();
                 const deptOrig = normalizeText(row["所属"]);
-                // 10系なら所属問わず集計、25系なら所属と受付者でフィルタ
                 const displayDept = targetDepartments.includes(deptOrig) ? deptOrig : "その他";
 
                 if (uketsukeNo.startsWith("10")) {
@@ -282,7 +294,7 @@
                     result.dept[displayDept]++;
                 } else if (uketsukeNo.startsWith("25")) {
                     const receptor = normalizeText(row["受付者"]);
-                    // 25系は、受付者リストに含まれ、かつ営業1~3課の所属である場合のみ
+                    // 25系は、受付者リストに含まれ、かつ営業1~3課である場合のみ
                     if (targetReceptors.includes(receptor) && targetDepartments.includes(deptOrig)) {
                         result.total++;
                         result.count25++;
@@ -293,8 +305,8 @@
             return result;
         };
 
-        const today = new Date();
         const baseMonthInput = document.getElementById('baseMonth');
+        const today = new Date();
         baseMonthInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
         const setupFileInput = (inputId, nameId, stateKey) => {
@@ -325,14 +337,12 @@
                         document.getElementById('previewDenomOther').textContent = state.denomResult.dept["その他"].toLocaleString();
                         document.getElementById('denomPreview').classList.remove('hidden');
                     }
-
                     showMessage(`${file.name} を読み込みました`, 'success');
                 } catch (error) {
                     console.error(error);
-                    showMessage(`ファイルの読み込みに失敗しました: ${file.name}`, 'error');
+                    showMessage(`読み込み失敗: ${file.name}`, 'error');
                     state[stateKey] = null;
-                    nameDisp.textContent = "読み込みエラー";
-                    if (stateKey === 'dataC') document.getElementById('denomPreview').classList.add('hidden');
+                    nameDisp.textContent = "エラー";
                 }
             });
         };
@@ -345,18 +355,12 @@
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheetName];
-                        const json = XLSX.utils.sheet_to_json(worksheet, { cellDates: true });
-                        resolve(json);
-                    } catch (error) {
-                        reject(error);
-                    }
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { cellDates: true });
+                    resolve(json);
                 };
-                reader.onerror = (error) => reject(error);
+                reader.onerror = reject;
                 reader.readAsArrayBuffer(file);
             });
         }
@@ -364,13 +368,9 @@
         function showMessage(msg, type) {
             const area = document.getElementById('messageArea');
             area.textContent = msg;
-            area.className = `p-4 mb-6 rounded-lg font-medium border flex items-center gap-2 ${
-                type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 
-                type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 
-                'bg-blue-50 text-blue-700 border-blue-200'
-            }`;
+            area.className = `p-4 mb-6 rounded-lg font-medium border ${type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`;
             area.classList.remove('hidden');
-            setTimeout(() => area.classList.add('hidden'), 5000);
+            setTimeout(() => area.classList.add('hidden'), 4000);
         }
 
         const parseDate = (val) => {
@@ -389,15 +389,10 @@
 
         document.getElementById('calcButton').addEventListener('click', () => {
             if (!state.dataA || !state.dataB || !state.dataC) {
-                showMessage('3つすべてのExcelファイルをアップロードしてください。', 'error');
+                showMessage('全ファイルをアップロードしてください。', 'error');
                 return;
             }
-            const baseMonthStr = document.getElementById('baseMonth').value;
-            if (!baseMonthStr) {
-                showMessage('基準月を設定してください。', 'error');
-                return;
-            }
-            calculate(baseMonthStr);
+            calculate(document.getElementById('baseMonth').value);
         });
 
         function calculate(baseMonthStr) {
@@ -408,17 +403,8 @@
             const prevMonthEnd = new Date(year, month - 1, 0, 23, 59, 59, 999);
             const prevPrevMonthEnd = new Date(year, month - 2, 0, 23, 59, 59, 999);
 
-            const isCond1 = (receiveDate) => {
-                if (!receiveDate) return false;
-                return receiveDate.getTime() >= prevMonthStart.getTime() && receiveDate.getTime() <= prevMonthEnd.getTime();
-            };
-
-            const isCond2 = (receiveDate, completeDate) => {
-                if (!receiveDate || !completeDate) return false;
-                return receiveDate.getTime() <= prevPrevMonthEnd.getTime() &&
-                       completeDate.getTime() >= currentMonthStart.getTime() &&
-                       completeDate.getTime() <= currentMonthEnd.getTime();
-            };
+            const isCond1 = (rDate) => rDate && rDate.getTime() >= prevMonthStart.getTime() && rDate.getTime() <= prevMonthEnd.getTime();
+            const isCond2 = (rDate, cDate) => rDate && cDate && rDate.getTime() <= prevPrevMonthEnd.getTime() && cDate.getTime() >= currentMonthStart.getTime() && cDate.getTime() <= currentMonthEnd.getTime();
 
             const result = {
                 A: { total: 0, dept: { "営業1課": 0, "営業2課": 0, "営業3課": 0, "その他": 0 }, cond1: 0, cond2: 0 },
@@ -426,42 +412,19 @@
                 Denom: state.denomResult
             };
 
-            // A (10お困り事): 所属制限なしで全データ集計
             state.dataA.forEach(row => {
-                const rDate = parseDate(row["受付日"]);
-                const cDate = parseDate(row["完了日"]);
-                const deptOrig = normalizeText(row["所属"]);
-                const displayDept = targetDepartments.includes(deptOrig) ? deptOrig : "その他";
-
-                let match = false;
-                if (isCond1(rDate)) { result.A.cond1++; match = true; }
-                else if (isCond2(rDate, cDate)) { result.A.cond2++; match = true; }
-                
-                if (match) {
-                    result.A.total++;
-                    result.A.dept[displayDept]++;
-                }
+                const rDate = parseDate(row["受付日"]), cDate = parseDate(row["完了日"]);
+                const dept = targetDepartments.includes(normalizeText(row["所属"])) ? normalizeText(row["所属"]) : "その他";
+                if (isCond1(rDate)) { result.A.cond1++; result.A.total++; result.A.dept[dept]++; }
+                else if (isCond2(rDate, cDate)) { result.A.cond2++; result.A.total++; result.A.dept[dept]++; }
             });
 
-            // B (25修繕): 所属と受付者でフィルタ
             state.dataB.forEach(row => {
-                const deptOrig = normalizeText(row["所属"]);
-                const receptor = normalizeText(row["受付者"]);
-                
-                // 25系は引き続き特定の3課かつ特定の受付者のみ
-                if (!targetDepartments.includes(deptOrig)) return;
-                if (!targetReceptors.includes(receptor)) return;
-
-                const rDate = parseDate(row["受付日"]);
-                const cDate = parseDate(row["完了日"]);
-                let match = false;
-                if (isCond1(rDate)) { result.B.cond1++; match = true; }
-                else if (isCond2(rDate, cDate)) { result.B.cond2++; match = true; }
-                
-                if (match) {
-                    result.B.total++;
-                    result.B.dept[deptOrig]++;
-                }
+                const dept = normalizeText(row["所属"]), receptor = normalizeText(row["受付者"]);
+                if (!targetDepartments.includes(dept) || !targetReceptors.includes(receptor)) return;
+                const rDate = parseDate(row["受付日"]), cDate = parseDate(row["完了日"]);
+                if (isCond1(rDate)) { result.B.cond1++; result.B.total++; result.B.dept[dept]++; }
+                else if (isCond2(rDate, cDate)) { result.B.cond2++; result.B.total++; result.B.dept[dept]++; }
             });
 
             renderResult(year, month, result);
@@ -469,35 +432,26 @@
 
         function renderResult(y, m, res) {
             document.getElementById('resultSection').classList.remove('hidden');
-            const prevM = m - 1 === 0 ? 12 : m - 1;
-            const prevPrevM = m - 2 <= 0 ? 12 + (m - 2) : m - 2;
-            document.getElementById('targetMonthDisplay').textContent = `設定基準月: ${y}年${m}月 (先月:${prevM}月 / 先々月:${prevPrevM}月)`;
+            document.getElementById('targetMonthDisplay').textContent = `基準月: ${y}年${m}月`;
 
             const totalNum = res.A.total + res.B.total;
             const totalDenom = res.Denom.total;
-            const totalRate = totalDenom > 0 ? ((totalNum / totalDenom) * 100).toFixed(1) : "0.0";
             
             document.getElementById('resTotalNum').textContent = totalNum.toLocaleString();
             document.getElementById('resTotalDenom').textContent = totalDenom.toLocaleString();
-            document.getElementById('resTotalRate').textContent = `${totalRate}%`;
+            document.getElementById('resTotalRate').textContent = `${floorRate(totalNum, totalDenom)}%`;
 
             const tbody = document.getElementById('deptTableBody');
             tbody.innerHTML = '';
-            
-            // 営業1~3課 + その他 をループ
-            const allCategories = [...targetDepartments, "その他"];
-            allCategories.forEach(cat => {
-                const num = res.A.dept[cat] + res.B.dept[cat];
-                const denom = res.Denom.dept[cat];
-                const rate = denom > 0 ? ((num / denom) * 100).toFixed(1) : "0.0";
-                
+            [...targetDepartments, "その他"].forEach(cat => {
+                const num = res.A.dept[cat] + res.B.dept[cat], denom = res.Denom.dept[cat];
                 const tr = document.createElement('tr');
-                tr.className = cat === "その他" ? "bg-slate-50/30" : "hover:bg-slate-50";
+                tr.className = "hover:bg-slate-50";
                 tr.innerHTML = `
-                    <td class="py-3 px-4 font-bold ${cat === 'その他' ? 'text-slate-500 italic' : 'text-slate-700'}">${cat}</td>
+                    <td class="py-3 px-4 font-bold text-slate-700">${cat}</td>
                     <td class="py-3 px-4 text-right">${denom.toLocaleString()}</td>
                     <td class="py-3 px-4 text-right text-blue-600 font-medium">${num.toLocaleString()}</td>
-                    <td class="py-3 px-4 text-right font-bold text-lg ${rate >= 80 ? 'text-green-600' : 'text-slate-700'} bg-slate-100/30">${rate}%</td>
+                    <td class="py-3 px-4 text-right font-bold text-lg bg-slate-100/30">${floorRate(num, denom)}%</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -508,19 +462,12 @@
             document.getElementById('bCond1').textContent = res.B.cond1.toLocaleString();
             document.getElementById('bCond2').textContent = res.B.cond2.toLocaleString();
             document.getElementById('bTotal').textContent = res.B.total.toLocaleString();
-            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
         }
 
         document.getElementById('toggleDetailsBtn').addEventListener('click', () => {
-            const area = document.getElementById('detailsArea');
-            const icon = document.getElementById('detailIcon');
-            if (area.classList.contains('hidden')) {
-                area.classList.remove('hidden');
-                icon.classList.add('rotate-180');
-            } else {
-                area.classList.add('hidden');
-                icon.classList.remove('rotate-180');
-            }
+            document.getElementById('detailsArea').classList.toggle('hidden');
+            document.getElementById('detailIcon').classList.toggle('rotate-180');
         });
     </script>
 </body>
