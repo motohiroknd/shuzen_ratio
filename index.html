@@ -20,22 +20,38 @@
             background-color: #f3f4f6;
             border-color: #3b82f6;
         }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 font-sans pb-20">
 
     <!-- ヘッダー -->
     <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
-            <i data-lucide="wrench" class="text-blue-600 w-7 h-7"></i>
-            <h1 class="text-2xl font-bold text-slate-800">修繕完了率 算出ツール</h1>
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="wrench" class="text-blue-600 w-7 h-7"></i>
+                <h1 class="text-2xl font-bold text-slate-800">修繕完了率 算出ツール</h1>
+            </div>
+            <div id="cloudStatus" class="flex items-center gap-2 text-xs font-medium text-slate-400">
+                <span id="cloudStatusIcon"><i data-lucide="cloud-off" class="w-4 h-4"></i></span>
+                <span id="cloudStatusText">オフラインモード</span>
+            </div>
         </div>
     </header>
 
     <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
         
         <!-- メッセージエリア -->
-        <div id="messageArea" class="hidden rounded-lg p-4 mb-6"></div>
+        <div id="messageArea" class="hidden rounded-lg p-4 mb-6 shadow-sm border"></div>
 
         <!-- 月次設定パネル -->
         <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -44,14 +60,16 @@
                     <i data-lucide="settings" class="w-5 h-5 text-purple-500"></i>
                     1. 基本設定（月1回のみ更新）
                 </h2>
-                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">月次作業</span>
+                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">クラウド同期対応</span>
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 h-full flex flex-col justify-center">
                     <label for="baseMonth" class="block text-sm font-bold text-slate-700 mb-2">「今月」として扱う基準月</label>
-                    <input type="month" id="baseMonth" class="w-full border border-slate-300 rounded-md px-3 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-shadow bg-white">
-                    <p class="text-xs text-slate-500 mt-2">※ここから「先月」「先々月」を自動計算します。</p>
+                    <div class="relative">
+                        <input type="month" id="baseMonth" class="w-full border border-slate-300 rounded-md px-3 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-shadow bg-white">
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">※基準月を変更すると自動でクラウドに保存されます。</p>
                 </div>
 
                 <div class="relative border-2 border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center text-center file-drop-area bg-white hover:bg-slate-50 transition-colors h-full">
@@ -69,7 +87,10 @@
                     
                     <div id="denomPreview" class="hidden mt-3 w-full bg-purple-50 rounded-lg p-3 border border-purple-100">
                         <div class="flex justify-between items-center mb-2 px-1">
-                            <p class="text-[10px] text-purple-500 font-bold uppercase tracking-wider">分母数内訳</p>
+                            <div class="flex items-center gap-1">
+                                <p class="text-[10px] text-purple-500 font-bold uppercase tracking-wider">分母数内訳</p>
+                                <span id="syncIndicator" class="hidden"><i data-lucide="cloud-check" class="w-3 h-3 text-green-500"></i></span>
+                            </div>
                             <div class="text-[10px] font-bold text-slate-600">
                                 10：<span id="previewDenom10" class="text-blue-600">0</span> 25：<span id="previewDenom25" class="text-green-600">0</span>
                             </div>
@@ -96,6 +117,7 @@
                                 <span id="previewDenomOther" class="text-xs font-bold text-slate-700">0</span>
                             </div>
                         </div>
+                        <p id="denomLoadTime" class="text-[8px] text-slate-400 mt-2 text-right italic"></p>
                     </div>
                 </div>
             </div>
@@ -230,14 +252,25 @@
         </section>
     </main>
 
-    <script>
-        lucide.createIcons();
+    <!-- Firebase SDK (Modular Version) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Configuration
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         const state = {
             dataA: null,
             dataB: null,
-            dataC: null,
-            denomResult: null 
+            dataC: null, // 分母用データ
+            denomResult: null,
+            user: null
         };
 
         const targetDepartments = ["営業1課", "営業2課", "営業3課"];
@@ -246,28 +279,84 @@
             "石原稔子", "近藤素弘", "土橋正季", "合田美結"
         ];
 
+        // --- Firebase Data Handling ---
+
+        const getDenomDocRef = () => {
+            // FIXED: Ensure even number of segments (6 segments)
+            // segments: artifacts (1), appId (2), public (3), data (4), settings (5), denomDoc (6)
+            return doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'denomDoc');
+        };
+
+        const saveDenomToCloud = async (result) => {
+            if (!state.user) return;
+            updateStatus('syncing', '保存中...');
+            try {
+                const docRef = getDenomDocRef();
+                await setDoc(docRef, {
+                    baseMonth: document.getElementById('baseMonth').value,
+                    denomResult: result,
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: state.user.uid
+                });
+                updateStatus('online', 'クラウド同期済み');
+                document.getElementById('syncIndicator').classList.remove('hidden');
+            } catch (error) {
+                console.error("Cloud save error:", error);
+                updateStatus('error', '保存失敗');
+            }
+        };
+
+        const loadDenomFromCloud = (user) => {
+            if (!user) return;
+            const docRef = getDenomDocRef();
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const cloudData = docSnap.data();
+                    document.getElementById('baseMonth').value = cloudData.baseMonth;
+                    state.denomResult = cloudData.denomResult;
+                    state.dataC = [{}]; // Dummy to signal presence
+                    
+                    renderDenomPreview(state.denomResult);
+                    document.getElementById('denomLoadTime').textContent = `最終更新: ${new Date(cloudData.updatedAt).toLocaleString()}`;
+                    document.getElementById('fileNameC').textContent = "クラウドから分母データを読み込み済み";
+                    updateStatus('online', 'クラウド同期済み');
+                } else {
+                    updateStatus('online', '設定未保存');
+                }
+            }, (error) => {
+                console.error("Firestore listen error:", error);
+                updateStatus('error', '同期エラー');
+            });
+        };
+
+        const updateStatus = (mode, text) => {
+            const iconWrap = document.getElementById('cloudStatusIcon');
+            const textWrap = document.getElementById('cloudStatusText');
+            if (!textWrap) return;
+            textWrap.textContent = text;
+            
+            if (mode === 'syncing') {
+                iconWrap.innerHTML = '<span class="loading-spinner"></span>';
+            } else if (mode === 'online') {
+                iconWrap.innerHTML = '<i data-lucide="cloud" class="w-4 h-4 text-blue-500"></i>';
+            } else if (mode === 'error') {
+                iconWrap.innerHTML = '<i data-lucide="cloud-off" class="w-4 h-4 text-red-500"></i>';
+            }
+            lucide.createIcons();
+        };
+
+        // --- Logic & Helpers ---
+
         const normalizeText = (text) => {
             if (typeof text !== 'string') return String(text || '');
             return text.replace(/\s+/g, '');
         };
 
-        /**
-         * 修正後の計算ロジック
-         * 小数点第2位以下を切り捨てて、第1位まで表示
-         */
         const floorRate = (num, denom) => {
             if (!denom || denom === 0) return "0.0";
-            
-            // 例: 263 / 516 = 0.50968...
             const ratio = num / denom;
-            
-            // 1000倍して整数にする (0.50968... -> 509.68...)
-            // Math.floorで小数点以下を落とす (509.68... -> 509)
-            // 10で割って第1位に戻す (509 -> 50.9)
-            // 誤差防止のため epsilon (微小な値) を引いてから floor するとより安全
             const val = ratio * 100;
             const result = Math.floor(val * 10) / 10;
-            
             return result.toFixed(1);
         };
 
@@ -300,46 +389,109 @@
             return result;
         };
 
-        const baseMonthInput = document.getElementById('baseMonth');
-        const today = new Date();
-        baseMonthInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-
-        const setupFileInput = (inputId, nameId, stateKey) => {
-            const input = document.getElementById(inputId);
-            const nameDisp = document.getElementById(nameId);
-            
-            input.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) {
-                    nameDisp.textContent = "";
-                    state[stateKey] = null;
-                    return;
-                }
-                nameDisp.textContent = file.name;
-                try {
-                    const data = await readExcel(file);
-                    state[stateKey] = data;
-                    if (stateKey === 'dataC') {
-                        state.denomResult = calculateDenomOnly(data);
-                        document.getElementById('previewDenomTotal').textContent = state.denomResult.total.toLocaleString();
-                        document.getElementById('previewDenom10').textContent = state.denomResult.count10.toLocaleString();
-                        document.getElementById('previewDenom25').textContent = state.denomResult.count25.toLocaleString();
-                        document.getElementById('previewDenom1').textContent = state.denomResult.dept["営業1課"].toLocaleString();
-                        document.getElementById('previewDenom2').textContent = state.denomResult.dept["営業2課"].toLocaleString();
-                        document.getElementById('previewDenom3').textContent = state.denomResult.dept["営業3課"].toLocaleString();
-                        document.getElementById('previewDenomOther').textContent = state.denomResult.dept["その他"].toLocaleString();
-                        document.getElementById('denomPreview').classList.remove('hidden');
-                    }
-                    showMessage(`${file.name} を読み込みました`, 'success');
-                } catch (error) {
-                    showMessage(`読み込み失敗: ${file.name}`, 'error');
-                }
-            });
+        const renderDenomPreview = (res) => {
+            document.getElementById('previewDenomTotal').textContent = res.total.toLocaleString();
+            document.getElementById('previewDenom10').textContent = res.count10.toLocaleString();
+            document.getElementById('previewDenom25').textContent = res.count25.toLocaleString();
+            document.getElementById('previewDenom1').textContent = res.dept["営業1課"].toLocaleString();
+            document.getElementById('previewDenom2').textContent = res.dept["営業2課"].toLocaleString();
+            document.getElementById('previewDenom3').textContent = res.dept["営業3課"].toLocaleString();
+            document.getElementById('previewDenomOther').textContent = res.dept["その他"].toLocaleString();
+            document.getElementById('denomPreview').classList.remove('hidden');
         };
 
-        setupFileInput('fileA', 'fileNameA', 'dataA');
-        setupFileInput('fileB', 'fileNameB', 'dataB');
-        setupFileInput('fileC', 'fileNameC', 'dataC');
+        const parseDate = (val) => {
+            if (!val) return null;
+            if (val instanceof Date) return val;
+            if (typeof val === 'string') {
+                const d = new Date(val);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            if (typeof val === 'number') {
+                const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+                return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+            }
+            return null;
+        };
+
+        // --- Event Listeners ---
+
+        window.addEventListener('load', async () => {
+            lucide.createIcons();
+            
+            // Auth init (Rule 3)
+            const initAuth = async () => {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            };
+            
+            await initAuth();
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    state.user = user;
+                    loadDenomFromCloud(user);
+                }
+            });
+
+            const baseMonthInput = document.getElementById('baseMonth');
+            const today = new Date();
+            if (!baseMonthInput.value) {
+                baseMonthInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            }
+
+            baseMonthInput.addEventListener('change', () => {
+                if (state.denomResult) {
+                    saveDenomToCloud(state.denomResult);
+                }
+            });
+
+            document.getElementById('fileA').addEventListener('change', async (e) => handleFile(e, 'dataA', 'fileNameA'));
+            document.getElementById('fileB').addEventListener('change', async (e) => handleFile(e, 'dataB', 'fileNameB'));
+            document.getElementById('fileC').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                document.getElementById('fileNameC').textContent = file.name;
+                try {
+                    const data = await readExcel(file);
+                    state.dataC = data;
+                    state.denomResult = calculateDenomOnly(data);
+                    renderDenomPreview(state.denomResult);
+                    saveDenomToCloud(state.denomResult);
+                    showMessage(`${file.name} を読み込み保存しました`, 'success');
+                } catch (error) {
+                    showMessage('分母データの解析に失敗しました', 'error');
+                }
+            });
+
+            document.getElementById('calcButton').addEventListener('click', () => {
+                if (!state.dataA || !state.dataB || !state.dataC) {
+                    showMessage('日次ファイル(A, B)をアップロードしてください。', 'error');
+                    return;
+                }
+                calculate();
+            });
+
+            document.getElementById('toggleDetailsBtn').addEventListener('click', () => {
+                document.getElementById('detailsArea').classList.toggle('hidden');
+                document.getElementById('detailIcon').classList.toggle('rotate-180');
+            });
+        });
+
+        async function handleFile(e, stateKey, nameId) {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById(nameId).textContent = file.name;
+            try {
+                state[stateKey] = await readExcel(file);
+                showMessage(`${file.name} を読み込みました`, 'success');
+            } catch (error) {
+                showMessage(`読み込み失敗: ${file.name}`, 'error');
+            }
+        }
 
         async function readExcel(file) {
             return new Promise((resolve, reject) => {
@@ -363,30 +515,10 @@
             setTimeout(() => area.classList.add('hidden'), 4000);
         }
 
-        const parseDate = (val) => {
-            if (!val) return null;
-            if (val instanceof Date) return val;
-            if (typeof val === 'string') {
-                const d = new Date(val);
-                return isNaN(d.getTime()) ? null : d;
-            }
-            if (typeof val === 'number') {
-                const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-                return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
-            }
-            return null;
-        };
-
-        document.getElementById('calcButton').addEventListener('click', () => {
-            if (!state.dataA || !state.dataB || !state.dataC) {
-                showMessage('全ファイルをアップロードしてください。', 'error');
-                return;
-            }
-            calculate(document.getElementById('baseMonth').value);
-        });
-
-        function calculate(baseMonthStr) {
+        function calculate() {
+            const baseMonthStr = document.getElementById('baseMonth').value;
             const [year, month] = baseMonthStr.split('-').map(Number);
+            
             const currentMonthStart = new Date(year, month - 1, 1);
             const currentMonthEnd = new Date(year, month, 0, 23, 59, 59, 999);
             const prevMonthStart = new Date(year, month - 2, 1);
@@ -454,11 +586,6 @@
             document.getElementById('bTotal').textContent = res.B.total.toLocaleString();
             document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
         }
-
-        document.getElementById('toggleDetailsBtn').addEventListener('click', () => {
-            document.getElementById('detailsArea').classList.toggle('hidden');
-            document.getElementById('detailIcon').classList.toggle('rotate-180');
-        });
     </script>
 </body>
 </html>
