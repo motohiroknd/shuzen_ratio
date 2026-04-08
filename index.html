@@ -20,92 +20,81 @@
             background-color: #f3f4f6;
             border-color: #3b82f6;
         }
-        /* スムーズな表示用 */
         #resultSection {
-            animation: fadeIn 0.5s ease-out;
+            animation: fadeIn 0.4s ease-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 font-sans pb-20">
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans pb-10">
 
     <!-- ヘッダー -->
     <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
-            <i data-lucide="wrench" class="text-blue-600 w-7 h-7"></i>
-            <h1 class="text-2xl font-bold text-slate-800">修繕完了率 算出ツール</h1>
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+            <i data-lucide="wrench" class="text-blue-600 w-6 h-6"></i>
+            <h1 class="text-xl font-bold text-slate-800">修繕完了率 算出ツール</h1>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
         
         <!-- メッセージエリア -->
-        <div id="messageArea" class="hidden rounded-lg p-4 mb-6"></div>
+        <div id="messageArea" class="hidden rounded-lg p-3 mb-4"></div>
 
-        <!-- 月次設定パネル (月1回) -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
-                <h2 class="text-lg font-semibold flex items-center gap-2">
-                    <i data-lucide="settings" class="w-5 h-5 text-purple-500"></i>
-                    1. 基本設定（月1回のみ更新）
+        <!-- 1. 基本設定 -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <i data-lucide="settings" class="w-4 h-4 text-purple-500"></i>
+                    1. 基本設定
                 </h2>
-                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">月次作業</span>
+                <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">月次作業</span>
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                <!-- 基準月 -->
-                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 h-full flex flex-col justify-center">
-                    <label for="baseMonth" class="block text-sm font-bold text-slate-700 mb-2">「今月」として扱う基準月</label>
-                    <input type="month" id="baseMonth" class="w-full border border-slate-300 rounded-md px-3 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-shadow bg-white">
-                    <p class="text-xs text-slate-500 mt-2">※ここから「先月」「先々月以前」を自動計算します。</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <label for="baseMonth" class="block text-xs font-bold text-slate-600 mb-1.5">基準月（今月）</label>
+                    <input type="month" id="baseMonth" class="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-purple-500 outline-none transition-shadow">
                 </div>
 
-                <!-- File C (分母) -->
-                <div class="relative border-2 border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center text-center file-drop-area bg-white hover:bg-slate-50 transition-colors h-full">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                            <i data-lucide="sigma" class="text-purple-600 w-4 h-4"></i>
-                        </div>
-                        <h3 class="font-bold text-slate-800">分母用データ (File C)</h3>
-                    </div>
-                    <p class="text-xs text-slate-500 mb-3">必須列: 受付番号, 受付者, 所属</p>
+                <div class="relative border-2 border-dashed border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center text-center file-drop-area bg-white hover:bg-slate-50">
+                    <h3 class="text-xs font-bold text-slate-800 flex items-center gap-1 mb-1">
+                        <i data-lucide="sigma" class="w-3 h-3 text-purple-500"></i>
+                        分母用データ（お困り事受付表）
+                    </h3>
                     <input type="file" id="fileC" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <button class="bg-white border border-slate-300 text-slate-700 text-xs px-4 py-1.5 rounded-md font-medium shadow-sm pointer-events-none">
-                        ファイルを選択
-                    </button>
-                    <p id="fileNameC" class="mt-2 text-sm text-purple-600 font-medium truncate w-full px-2 min-h-[20px]"></p>
+                    <p id="fileNameC" class="text-xs text-purple-600 font-medium truncate w-full px-2">ファイルを選択</p>
                     
-                    <!-- 分母プレビュー表示 -->
-                    <div id="denomPreview" class="hidden mt-3 w-full bg-purple-50 rounded-lg p-3 border border-purple-100">
-                        <div class="flex justify-between items-center mb-2 px-1">
-                            <p class="text-[10px] text-purple-500 font-bold uppercase tracking-wider">読み込み済みの分母数</p>
-                            <div class="text-[10px] font-bold text-slate-600">
-                                10系：<span id="previewDenom10" class="text-blue-600">0</span> / 25系：<span id="previewDenom25" class="text-green-600">0</span>
+                    <div id="denomPreview" class="hidden mt-2 w-full bg-purple-50 rounded p-2 border border-purple-100">
+                        <div class="flex justify-between items-center mb-1 px-1">
+                            <p class="text-[9px] text-purple-500 font-bold uppercase">分母内訳</p>
+                            <div class="text-[9px] font-bold text-slate-600">
+                                10系:<span id="previewDenom10" class="text-blue-600">0</span> / 25系:<span id="previewDenom25" class="text-green-600">0</span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-5 gap-1 bg-white rounded p-2 border border-purple-50 shadow-sm">
+                        <div class="grid grid-cols-5 gap-1 bg-white rounded py-1 px-1 border border-purple-50">
                             <div class="text-center">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">合計</span>
-                                <span id="previewDenomTotal" class="text-sm font-black text-slate-800">0</span>
+                                <span class="text-[8px] text-slate-400 block">合計</span>
+                                <span id="previewDenomTotal" class="text-xs font-black text-slate-800">0</span>
                             </div>
                             <div class="text-center border-l border-slate-100">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">営業1</span>
-                                <span id="previewDenom1" class="text-xs font-bold text-slate-700">0</span>
+                                <span class="text-[8px] text-slate-400 block">営1</span>
+                                <span id="previewDenom1" class="text-[10px] font-bold">0</span>
                             </div>
                             <div class="text-center border-l border-slate-100">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">営業2</span>
-                                <span id="previewDenom2" class="text-xs font-bold text-slate-700">0</span>
+                                <span class="text-[8px] text-slate-400 block">営2</span>
+                                <span id="previewDenom2" class="text-[10px] font-bold">0</span>
                             </div>
                             <div class="text-center border-l border-slate-100">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">営業3</span>
-                                <span id="previewDenom3" class="text-xs font-bold text-slate-700">0</span>
+                                <span class="text-[8px] text-slate-400 block">営3</span>
+                                <span id="previewDenom3" class="text-[10px] font-bold">0</span>
                             </div>
                             <div class="text-center border-l border-slate-100">
-                                <span class="text-[9px] text-slate-400 block mb-0.5">その他</span>
-                                <span id="previewDenomOther" class="text-xs font-bold text-slate-700">0</span>
+                                <span class="text-[8px] text-slate-400 block">他</span>
+                                <span id="previewDenomOther" class="text-[10px] font-bold">0</span>
                             </div>
                         </div>
                     </div>
@@ -113,135 +102,122 @@
             </div>
         </section>
 
-        <!-- 日次データパネル -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 border-t-4 border-t-blue-500">
-            <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                <h2 class="text-lg font-semibold flex items-center gap-2">
-                    <i data-lucide="file-spreadsheet" class="w-5 h-5 text-blue-500"></i>
-                    2. 完了データの読み込み（毎日更新）
+        <!-- 2. 日次データパネル -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-t-4 border-t-blue-500">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 text-blue-500"></i>
+                    2. 完了データの読み込み
                 </h2>
-                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">日次作業</span>
+                <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">日次作業</span>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- File A -->
-                <div class="relative border-2 border-dashed border-blue-200 rounded-xl p-8 flex flex-col items-center justify-center text-center file-drop-area bg-blue-50/30 hover:bg-blue-50 transition-colors">
-                    <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
-                        <span class="text-blue-600 font-bold text-2xl">A</span>
-                    </div>
-                    <h3 class="font-bold text-slate-800 text-lg mb-1">10お困り事 完了数</h3>
-                    <p class="text-sm text-slate-500 mb-5">※所属制限なし（全データ対象）</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="relative border-2 border-dashed border-blue-100 rounded-lg p-4 flex flex-col items-center justify-center text-center file-drop-area bg-blue-50/20 hover:bg-blue-50 transition-colors">
+                    <span class="text-blue-600 font-black text-lg mb-1">A</span>
+                    <h3 class="font-bold text-slate-800 text-sm mb-1">10お困り事 完了数</h3>
                     <input type="file" id="fileA" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <button class="bg-white border border-blue-300 text-blue-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm hover:bg-blue-50 pointer-events-none">
-                        ファイルを選択
-                    </button>
-                    <p id="fileNameA" class="mt-3 text-sm text-blue-600 font-bold truncate w-full px-2 min-h-[20px]"></p>
+                    <p id="fileNameA" class="text-xs text-blue-600 font-bold truncate w-full px-2">選択されていません</p>
                 </div>
 
-                <!-- File B -->
-                <div class="relative border-2 border-dashed border-green-200 rounded-xl p-8 flex flex-col items-center justify-center text-center file-drop-area bg-green-50/30 hover:bg-green-50 transition-colors">
-                    <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
-                        <span class="text-green-600 font-bold text-2xl">B</span>
-                    </div>
-                    <h3 class="font-bold text-slate-800 text-lg mb-1">25設備保証修繕 完了数</h3>
-                    <p class="text-sm text-slate-500 mb-5">必須列: 受付日, 完了日, 所属, 受付者</p>
+                <div class="relative border-2 border-dashed border-green-100 rounded-lg p-4 flex flex-col items-center justify-center text-center file-drop-area bg-green-50/20 hover:bg-green-50 transition-colors">
+                    <span class="text-green-600 font-black text-lg mb-1">B</span>
+                    <h3 class="font-bold text-slate-800 text-sm mb-1">25設備保証修繕 完了数</h3>
                     <input type="file" id="fileB" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <button class="bg-white border border-green-300 text-green-700 text-sm px-6 py-2.5 rounded-md font-medium shadow-sm hover:bg-green-50 pointer-events-none">
-                        ファイルを選択
-                    </button>
-                    <p id="fileNameB" class="mt-3 text-sm text-green-600 font-bold truncate w-full px-2 min-h-[20px]"></p>
+                    <p id="fileNameB" class="text-xs text-green-600 font-bold truncate w-full px-2">選択されていません</p>
                 </div>
             </div>
         </section>
 
         <!-- アクションボタン -->
         <div class="flex justify-center">
-            <button id="calcButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-12 rounded-full shadow-lg shadow-blue-200 flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95">
-                <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+            <button id="calcButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-10 rounded-full shadow-md flex items-center gap-2 transition-all transform active:scale-95 text-sm">
+                <i data-lucide="play" class="w-4 h-4 fill-current"></i>
                 計算を実行する
             </button>
         </div>
 
         <!-- 結果表示パネル -->
         <section id="resultSection" class="hidden bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-            <div class="bg-slate-800 text-white px-6 py-4 flex items-center justify-between">
-                <h2 class="text-xl font-bold flex items-center gap-2">
-                    <i data-lucide="pie-chart" class="w-5 h-5"></i>
+            <div class="bg-slate-800 text-white px-5 py-3 flex items-center justify-between">
+                <h2 class="text-lg font-bold flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4"></i>
                     集計結果
                 </h2>
-                <div id="targetMonthDisplay" class="text-sm bg-slate-700 px-3 py-1 rounded-full border border-slate-600"></div>
+                <div id="targetMonthDisplay" class="text-[11px] bg-slate-700 px-3 py-1 rounded-full border border-slate-600"></div>
             </div>
 
-            <div class="p-6">
-                <!-- 全体サマリー -->
-                <div class="mb-8 bg-blue-50 rounded-xl p-6 border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="p-5">
+                <!-- 全体サマリー (コンパクト版) -->
+                <div class="mb-6 bg-blue-50 rounded-lg p-4 border border-blue-100 flex items-center justify-between">
                     <div>
-                        <h3 class="text-lg font-bold text-blue-900 mb-1">全体 修繕完了率</h3>
-                        <p class="text-sm text-blue-700">A(全所属) + B(特定3課) の完了数 ÷ 分母合計</p>
+                        <h3 class="text-sm font-bold text-blue-900">全体 修繕完了率</h3>
+                        <p class="text-[10px] text-blue-600 mt-0.5">A(全所属) + B(特定3課) の完了数 ÷ 分母合計</p>
                     </div>
-                    <div class="flex items-end gap-4">
-                        <div class="text-center">
-                            <p class="text-sm text-slate-500 mb-1">完了数 (分子)</p>
-                            <p id="resTotalNum" class="text-2xl font-bold text-slate-700">0</p>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <div class="text-[10px] text-slate-500">分子 / 分母</div>
+                            <div class="text-sm font-bold text-slate-700">
+                                <span id="resTotalNum">0</span> / <span id="resTotalDenom">0</span>
+                            </div>
                         </div>
-                        <div class="text-3xl font-light text-slate-300 pb-1">/</div>
-                        <div class="text-center">
-                            <p class="text-sm text-slate-500 mb-1">対象数 (分母)</p>
-                            <p id="resTotalDenom" class="text-2xl font-bold text-slate-700">0</p>
-                        </div>
-                        <div class="text-3xl font-light text-slate-300 pb-1">=</div>
-                        <div class="text-center bg-white rounded-lg px-4 py-2 shadow-sm border border-blue-100">
-                            <p id="resTotalRate" class="text-4xl font-black text-blue-600">0.0%</p>
+                        <div class="bg-white rounded-lg px-4 py-1.5 shadow-sm border border-blue-200">
+                            <p id="resTotalRate" class="text-2xl font-black text-blue-600 leading-none">0.0%</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- 各課ごとの詳細 -->
-                <h3 class="text-lg font-bold border-b-2 border-slate-100 pb-2 mb-4">各課・その他集計</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                                <th class="py-3 px-4 font-medium">所属</th>
-                                <th class="py-3 px-4 font-medium text-right">分母 (対象数)</th>
-                                <th class="py-3 px-4 font-medium text-right">分子 (完了数)</th>
-                                <th class="py-3 px-4 font-medium text-right bg-slate-100 rounded-tr-lg">完了率</th>
+                            <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                <th class="py-2 px-4 font-bold">所属</th>
+                                <th class="py-2 px-4 font-bold text-right">分母 (対象)</th>
+                                <th class="py-2 px-4 font-bold text-right">分子 (完了)</th>
+                                <th class="py-2 px-4 font-bold text-right bg-slate-100 w-24 rounded-t-lg">完了率</th>
                             </tr>
                         </thead>
-                        <tbody id="deptTableBody" class="text-slate-700 divide-y divide-slate-100">
+                        <tbody id="deptTableBody" class="text-sm text-slate-700 divide-y divide-slate-100">
                             <!-- JSで生成 -->
                         </tbody>
                     </table>
                 </div>
 
-                <!-- 内訳詳細 -->
-                <div class="mt-8 pt-6 border-t border-slate-200 text-right">
-                    <p class="text-[10px] text-slate-400 italic mb-2">※計算ロジック：小数点第2位以下切り捨て</p>
-                    <button id="toggleDetailsBtn" class="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors ml-auto">
-                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" id="detailIcon"></i>
-                        計算の内訳を表示する
-                    </button>
+                <!-- 内訳詳細 (デフォルト折りたたみ) -->
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-[9px] text-slate-400 italic">※小数点第2位以下切り捨て</p>
+                        <button id="toggleDetailsBtn" class="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 font-bold transition-colors">
+                            <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200" id="detailIcon"></i>
+                            内訳を表示
+                        </button>
+                    </div>
                     
-                    <div id="detailsArea" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                        <!-- A詳細 -->
-                        <div class="bg-slate-50 rounded-lg p-4 text-sm border border-slate-200">
-                            <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">A: 10お困り事 (所属制限なし)</h4>
-                            <ul class="space-y-2 text-slate-600">
-                                <li class="flex justify-between"><span>条件① (先月受付):</span> <strong id="aCond1">0</strong></li>
-                                <li class="flex justify-between"><span>条件② (先々月以前受付＆今月完了):</span> <strong id="aCond2">0</strong></li>
-                                <li class="flex justify-between text-blue-600 font-bold border-t border-slate-200 pt-2 mt-2">
-                                    <span>合計 (③):</span> <span id="aTotal">0</span>
+                    <div id="detailsArea" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-slate-50 rounded p-3 text-[11px] border border-slate-200">
+                            <h4 class="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1 flex items-center gap-1">
+                                <span class="bg-blue-600 text-white w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px]">A</span>
+                                10お困り事
+                            </h4>
+                            <ul class="space-y-1.5 text-slate-600">
+                                <li class="flex justify-between"><span>先月受付:</span> <strong id="aCond1">0</strong></li>
+                                <li class="flex justify-between"><span>先々月以前受付＆今月完了:</span> <strong id="aCond2">0</strong></li>
+                                <li class="flex justify-between text-blue-600 font-bold border-t border-slate-200 pt-1 mt-1">
+                                    <span>小計:</span> <span id="aTotal">0</span>
                                 </li>
                             </ul>
                         </div>
-                        <!-- B詳細 -->
-                        <div class="bg-slate-50 rounded-lg p-4 text-sm border border-slate-200">
-                            <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">B: 25設備保証修繕 (特定3課)</h4>
-                            <ul class="space-y-2 text-slate-600">
-                                <li class="flex justify-between"><span>条件① (先月受付):</span> <strong id="bCond1">0</strong></li>
-                                <li class="flex justify-between"><span>条件② (先々月以前受付＆今月完了):</span> <strong id="bCond2">0</strong></li>
-                                <li class="flex justify-between text-green-600 font-bold border-t border-slate-200 pt-2 mt-2">
-                                    <span>合計 (③):</span> <span id="bTotal">0</span>
+                        <div class="bg-slate-50 rounded p-3 text-[11px] border border-slate-200">
+                            <h4 class="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1 flex items-center gap-1">
+                                <span class="bg-green-600 text-white w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px]">B</span>
+                                25設備保証修繕
+                            </h4>
+                            <ul class="space-y-1.5 text-slate-600">
+                                <li class="flex justify-between"><span>先月受付:</span> <strong id="bCond1">0</strong></li>
+                                <li class="flex justify-between"><span>先々月以前受付＆今月完了:</span> <strong id="bCond2">0</strong></li>
+                                <li class="flex justify-between text-green-600 font-bold border-t border-slate-200 pt-1 mt-1">
+                                    <span>小計:</span> <span id="bTotal">0</span>
                                 </li>
                             </ul>
                         </div>
@@ -268,24 +244,17 @@
             "石原稔子", "近藤素弘", "土橋正季", "合田美結"
         ];
 
-        // 文字列クリーニング
         const normalizeText = (text) => {
             if (typeof text !== 'string') return String(text || '');
             return text.replace(/\s+/g, '').trim();
         };
 
-        /**
-         * 小数点第2位以下を切り捨てて、第1位まで表示する
-         */
         const floorRate = (num, denom) => {
             if (!denom || denom === 0) return "0.0";
             const val = (num / denom) * 100;
             return (Math.floor(val * 10) / 10).toFixed(1);
         };
 
-        /**
-         * 分母データ(File C)の事前集計
-         */
         const calculateDenomOnly = (data) => {
             const result = { 
                 total: 0, 
@@ -305,7 +274,6 @@
                     result.dept[displayDept]++;
                 } else if (uketsukeNo.startsWith("25")) {
                     const receptor = normalizeText(row["受付者"]);
-                    // 25系は、受付者リストに含まれ、かつ営業1~3課である場合のみカウント
                     if (targetReceptors.includes(receptor) && targetDepartments.includes(deptOrig)) {
                         result.total++;
                         result.count25++;
@@ -316,14 +284,10 @@
             return result;
         };
 
-        // 初期設定：今月を選択
         const baseMonthInput = document.getElementById('baseMonth');
         const today = new Date();
         baseMonthInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-        /**
-         * ファイル入力設定
-         */
         const setupFileInput = (inputId, nameId, stateKey) => {
             const input = document.getElementById(inputId);
             const nameDisp = document.getElementById(nameId);
@@ -331,7 +295,7 @@
             input.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) {
-                    nameDisp.textContent = "";
+                    nameDisp.textContent = "選択されていません";
                     state[stateKey] = null;
                     if (stateKey === 'dataC') document.getElementById('denomPreview').classList.add('hidden');
                     return;
@@ -341,7 +305,6 @@
                     const data = await readExcel(file);
                     state[stateKey] = data;
 
-                    // Cファイル読み込み時はプレビューを更新
                     if (stateKey === 'dataC') {
                         state.denomResult = calculateDenomOnly(data);
                         document.getElementById('previewDenomTotal').textContent = state.denomResult.total.toLocaleString();
@@ -355,8 +318,7 @@
                     }
                     showMessage(`${file.name} を読み込みました`, 'success');
                 } catch (error) {
-                    console.error(error);
-                    showMessage(`読み込み失敗: ${file.name}`, 'error');
+                    showMessage(`読み込み失敗`, 'error');
                     state[stateKey] = null;
                     nameDisp.textContent = "エラー";
                 }
@@ -384,9 +346,9 @@
         function showMessage(msg, type) {
             const area = document.getElementById('messageArea');
             area.textContent = msg;
-            area.className = `p-4 mb-6 rounded-lg font-medium border ${type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`;
+            area.className = `p-3 mb-4 rounded-lg text-xs font-bold border ${type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`;
             area.classList.remove('hidden');
-            setTimeout(() => area.classList.add('hidden'), 4000);
+            setTimeout(() => area.classList.add('hidden'), 3000);
         }
 
         const parseDate = (val) => {
@@ -405,7 +367,7 @@
 
         document.getElementById('calcButton').addEventListener('click', () => {
             if (!state.dataA || !state.dataB || !state.dataC) {
-                showMessage('全てのファイルをアップロードしてください。', 'error');
+                showMessage('全てのファイルを読み込んでください。', 'error');
                 return;
             }
             calculate(document.getElementById('baseMonth').value);
@@ -413,15 +375,12 @@
 
         function calculate(baseMonthStr) {
             const [year, month] = baseMonthStr.split('-').map(Number);
-            
-            // 判定用日付オブジェクトの生成
             const currentMonthStart = new Date(year, month - 1, 1);
             const currentMonthEnd = new Date(year, month, 0, 23, 59, 59, 999);
             const prevMonthStart = new Date(year, month - 2, 1);
             const prevMonthEnd = new Date(year, month - 1, 0, 23, 59, 59, 999);
             const prevPrevMonthEnd = new Date(year, month - 2, 0, 23, 59, 59, 999);
 
-            // 判定ロジック
             const isCond1 = (rDate) => rDate && rDate.getTime() >= prevMonthStart.getTime() && rDate.getTime() <= prevMonthEnd.getTime();
             const isCond2 = (rDate, cDate) => rDate && cDate && rDate.getTime() <= prevPrevMonthEnd.getTime() && cDate.getTime() >= currentMonthStart.getTime() && cDate.getTime() <= currentMonthEnd.getTime();
 
@@ -431,7 +390,6 @@
                 Denom: state.denomResult
             };
 
-            // File A集計 (10お困り事：所属制限なし)
             state.dataA.forEach(row => {
                 const rDate = parseDate(row["受付日"]), cDate = parseDate(row["完了日"]);
                 const deptOrig = normalizeText(row["所属"]);
@@ -440,7 +398,6 @@
                 else if (isCond2(rDate, cDate)) { result.A.cond2++; result.A.total++; result.A.dept[dept]++; }
             });
 
-            // File B集計 (25設備保証：特定3課かつ特定受付者のみ)
             state.dataB.forEach(row => {
                 const dept = normalizeText(row["所属"]), receptor = normalizeText(row["受付者"]);
                 if (!targetDepartments.includes(dept) || !targetReceptors.includes(receptor)) return;
@@ -454,7 +411,7 @@
 
         function renderResult(y, m, res) {
             document.getElementById('resultSection').classList.remove('hidden');
-            document.getElementById('targetMonthDisplay').textContent = `基準月: ${y}年${m}月`;
+            document.getElementById('targetMonthDisplay').textContent = `${y}年${m}月`;
 
             const totalNum = res.A.total + res.B.total;
             const totalDenom = res.Denom.total;
@@ -471,15 +428,14 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-colors";
                 tr.innerHTML = `
-                    <td class="py-4 px-4 font-bold text-slate-700">${cat}</td>
-                    <td class="py-4 px-4 text-right">${denom.toLocaleString()}</td>
-                    <td class="py-4 px-4 text-right text-blue-600 font-medium">${num.toLocaleString()}</td>
-                    <td class="py-4 px-4 text-right font-bold text-lg bg-slate-100/30">${floorRate(num, denom)}%</td>
+                    <td class="py-2.5 px-4 font-bold text-slate-700">${cat}</td>
+                    <td class="py-2.5 px-4 text-right">${denom.toLocaleString()}</td>
+                    <td class="py-2.5 px-4 text-right text-blue-600 font-medium">${num.toLocaleString()}</td>
+                    <td class="py-2.5 px-4 text-right font-bold text-base bg-slate-100/40">${floorRate(num, denom)}%</td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            // 内訳数値をセット
             document.getElementById('aCond1').textContent = res.A.cond1.toLocaleString();
             document.getElementById('aCond2').textContent = res.A.cond2.toLocaleString();
             document.getElementById('aTotal').textContent = res.A.total.toLocaleString();
@@ -487,11 +443,9 @@
             document.getElementById('bCond2').textContent = res.B.cond2.toLocaleString();
             document.getElementById('bTotal').textContent = res.B.total.toLocaleString();
             
-            // スクロール
             document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 内訳表示トグル
         document.getElementById('toggleDetailsBtn').addEventListener('click', () => {
             const area = document.getElementById('detailsArea');
             const icon = document.getElementById('detailIcon');
